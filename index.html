@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TPV PRO</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-100 font-sans h-screen flex flex-col">
+
+    <header class="bg-indigo-600 text-white p-4 shadow-md flex justify-between items-center shrink-0">
+        <h1 class="text-xl font-bold"><i class="fa-solid fa-cash-register mr-2"></i>El mejor TPV de la Historia & Gratis</h1>
+        <div class="space-x-1 sm:space-x-2">
+            <button onclick="cambiarVista('tpv')" class="px-3 py-2 rounded bg-indigo-700 hover:bg-indigo-800 transition text-sm"><i class="fa-solid fa-calculator mr-1"></i> Ventas</button>
+            <button onclick="cambiarVista('inventario')" class="px-3 py-2 rounded bg-indigo-700 hover:bg-indigo-800 transition text-sm"><i class="fa-solid fa-utensils mr-1"></i> Productos</button>
+            <button onclick="cambiarVista('caja')" class="px-3 py-2 rounded bg-indigo-700 hover:bg-indigo-800 transition text-sm"><i class="fa-solid fa-vault mr-1"></i> Cierre de Caja</button>
+            <button onclick="cambiarVista('config')" class="px-3 py-2 rounded bg-gray-700 hover:bg-gray-800 transition text-sm"><i class="fa-solid fa-gear mr-1"></i> Ticket</button>
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-hidden p-4">
+        
+        <div id="vista-tpv" class="h-full flex gap-4">
+            <div class="w-2/3 bg-white rounded-lg shadow p-4 flex flex-col h-full">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold text-gray-700">Productos</h2>
+                    <div class="flex gap-2">
+                        <button onclick="filtrarProductos('todos')" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 text-sm">Todos</button>
+                        <button onclick="filtrarProductos('comida')" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 text-sm">Comida</button>
+                        <button onclick="filtrarProductos('bebida')" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 text-sm">Bebida</button>
+                    </div>
+                </div>
+                <div id="lista-productos-tpv" class="grid grid-cols-3 gap-3 overflow-y-auto flex-1 content-start"></div>
+            </div>
+
+            <div class="w-1/3 bg-white rounded-lg shadow p-4 flex flex-col h-full">
+                <h2 class="text-lg font-semibold text-gray-700 mb-4 border-b pb-2"><i class="fa-solid fa-receipt mr-2"></i>Ticket Actual</h2>
+                <div id="contenido-ticket" class="flex-1 overflow-y-auto space-y-2 pr-1"></div>
+                <div class="border-t pt-4 mt-2 space-y-3">
+                    <div class="flex justify-between text-xl font-bold text-gray-800">
+                        <span>Total:</span>
+                        <span id="total-ticket">0.00 €</span>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Método de Pago</label>
+                        <select id="metodo-pago" class="w-full p-2 border rounded bg-gray-50 focus:outline-indigo-500">
+                            <option value="Efectivo">💵 Efectivo</option>
+                            <option value="Tarjeta">💳 Tarjeta</option>
+                            <option value="Bizum">📱 Bizum</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="vaciarTicket()" class="w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded font-semibold transition">Cancelar</button>
+                        <button onclick="procesarPago()" class="w-full bg-green-500 hover:bg-green-600 text-white py-2 rounded font-semibold transition">Cobrar e Imprimir</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="vista-inventario" class="hidden h-full flex gap-4">
+            <div class="w-1/3 bg-white rounded-lg shadow p-4">
+                <h2 id="titulo-form-producto" class="text-lg font-semibold text-gray-700 mb-4">Añadir Producto</h2>
+                <form id="form-producto" onsubmit="guardarProducto(event)" class="space-y-4">
+                    <input type="hidden" id="prod-id">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Nombre del Producto</label>
+                        <input type="text" id="prod-nombre" required class="w-full p-2 border rounded mt-1 focus:outline-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Precio (€)</label>
+                        <input type="number" id="prod-precio" step="0.01" min="0" required class="w-full p-2 border rounded mt-1 focus:outline-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Categoría</label>
+                        <select id="prod-categoria" class="w-full p-2 border rounded mt-1 focus:outline-indigo-500">
+                            <option value="comida">🍔 Comida</option>
+                            <option value="bebida">🥤 Bebida</option>
+                        </select>
+                    </div>
+                    <div class="flex gap-2 pt-2">
+                        <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded font-semibold transition">Guardar</button>
+                        <button type="button" onclick="limpiarFormularioProducto()" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded transition">Limpiar</button>
+                    </div>
+                </form>
+            </div>
+            <div class="w-2/3 bg-white rounded-lg shadow p-4 flex flex-col h-full">
+                <h2 class="text-lg font-semibold text-gray-700 mb-4">Lista de Productos</h2>
+                <div class="overflow-y-auto flex-1">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100 text-gray-600 uppercase text-xs">
+                                <th class="p-3">Nombre</th>
+                                <th class="p-3">Categoría</th>
+                                <th class="p-3">Precio</th>
+                                <th class="p-3 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-productos-cuerpo"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="vista-caja" class="hidden h-full flex gap-4">
+            <div class="w-1/3 bg-white rounded-lg shadow p-4 flex flex-col justify-between">
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-700 mb-4 border-b pb-2"><i class="fa-solid fa-chart-pie mr-2"></i>Caja de Hoy</h2>
+                    <div class="space-y-3 mt-4">
+                        <div class="flex justify-between p-3 bg-green-50 rounded text-green-800 font-medium"><span>💵 Efectivo:</span> <span id="caja-efectivo">0.00 €</span></div>
+                        <div class="flex justify-between p-3 bg-blue-50 rounded text-blue-800 font-medium"><span>💳 Tarjeta:</span> <span id="caja-tarjeta">0.00 €</span></div>
+                        <div class="flex justify-between p-3 bg-purple-50 rounded text-purple-800 font-medium"><span>📱 Bizum:</span> <span id="caja-bizum">0.00 €</span></div>
+                        <div class="flex justify-between p-4 bg-indigo-50 rounded text-indigo-900 font-bold text-lg border border-indigo-200 mt-6"><span>💰 TOTAL:</span> <span id="caja-total">0.00 €</span></div>
+                    </div>
+                    <div class="mt-4">
+                        <button onclick="descargarInformeCaja()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded font-semibold transition text-sm shadow-sm"><i class="fa-solid fa-download mr-2"></i>Descargar Cierre (.TXT)</button>
+                    </div>
+                </div>
+                <button onclick="ejecutarCierreCaja()" class="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-bold shadow transition mt-4"><i class="fa-solid fa-lock mr-2"></i>Hacer Cierre y Reiniciar Caja</button>
+            </div>
+            <div class="w-2/3 bg-white rounded-lg shadow p-4 flex flex-col h-full">
+                <h2 class="text-lg font-semibold text-gray-700 mb-4">Historial de Tickets</h2>
+                <div class="overflow-y-auto flex-1">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100 text-gray-600 uppercase text-xs">
+                                <th class="p-3">Hora</th>
+                                <th class="p-3">Método</th>
+                                <th class="p-3">Items</th>
+                                <th class="p-3 text-right">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-ventas-cuerpo"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="vista-config" class="hidden h-full flex gap-4">
+            <div class="w-1/2 bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold text-gray-700 mb-4 border-b pb-2"><i class="fa-solid fa-sliders mr-2"></i>Configurar Datos del Ticket</h2>
+                <form id="form-config-ticket" onsubmit="guardarConfigTicket(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Nombre del Negocio</label>
+                        <input type="text" id="cfg-nombre" class="w-full p-2 border rounded mt-1 focus:outline-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">NIF / CIF</label>
+                        <input type="text" id="cfg-cif" class="w-full p-2 border rounded mt-1 focus:outline-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Dirección</label>
+                        <input type="text" id="cfg-direccion" class="w-full p-2 border rounded mt-1 focus:outline-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Teléfono</label>
+                        <input type="text" id="cfg-telefono" class="w-full p-2 border rounded mt-1 focus:outline-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Mensaje de pie de página</label>
+                        <textarea id="cfg-pie" rows="2" class="w-full p-2 border rounded mt-1 focus:outline-indigo-500"></textarea>
+                    </div>
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded font-semibold transition">Guardar Configuración</button>
+                </form>
+            </div>
+            
+            <div class="w-1/2 bg-gray-800 rounded-lg p-6 flex flex-col items-center justify-center">
+                <p class="text-white text-sm mb-2 font-semibold">Vista Previa Impresión (80mm):</p>
+                <div class="bg-amber-50 p-4 text-black font-mono text-xs shadow-md w-64 border border-amber-200">
+                    <div class="text-center font-bold" id="prev-nombre">MI RESTAURANTE S.L.</div>
+                    <div class="text-center" id="prev-cif">CIF: B-12345678</div>
+                    <div class="text-center line-clamp-1" id="prev-direccion">Calle Gran Vía...</div>
+                    <div class="text-center mb-2" id="prev-telefono">Tel: 910000000</div>
+                    <div class="border-b border-dashed border-gray-400 my-1"></div>
+                    <div>1x Hamburguesa ...... 8.50€</div>
+                    <div>1x Cerveza .......... 2.50€</div>
+                    <div class="border-b border-dashed border-gray-400 my-1"></div>
+                    <div class="text-right font-bold text-sm">TOTAL: 11.00€</div>
+                    <div class="border-b border-dashed border-gray-400 my-1"></div>
+                    <div class="text-center text-[10px] mt-2" id="prev-pie">¡Gracias por su visita!</div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        const productosPorDefecto = [
+            { id: 1, nombre: "Hamburguesa Clásica", precio: 8.50, categoria: "comida" },
+            { id: 2, nombre: "Patatas Fritas", precio: 3.50, categoria: "comida" },
+            { id: 3, nombre: "Refresco Cola", precio: 2.00, categoria: "bebida" },
+            { id: 4, nombre: "Cerveza", precio: 2.50, categoria: "bebida" }
+        ];
+
+        const configTicketPorDefecto = {
+            nombre: "Mi Restaurante S.L.",
+            cif: "B-12345678",
+            direccion: "Calle Gran Vía, 45, Madrid",
+            telefono: "910 00 00 00",
+            pie: "¡Gracias por su visita! Vuelva pronto."
+        };
+
+        let productos = JSON.parse(localStorage.getItem('tpv_productos')) || productosPorDefecto;
+        let ventas = JSON.parse(localStorage.getItem('tpv_ventas')) || [];
+        let configTicket = JSON.parse(localStorage.getItem('tpv_config_ticket')) || configTicketPorDefecto;
+        let ticketActual = [];
+
+        function guardarDatos() {
+            localStorage.setItem('tpv_productos', JSON.stringify(productos));
+            localStorage.setItem('tpv_ventas', JSON.stringify(ventas));
+            localStorage.setItem('tpv_config_ticket', JSON.stringify(configTicket));
+        }
+
+        function cambiarVista(vista) {
+            document.getElementById('vista-tpv').classList.add('hidden');
+            document.getElementById('vista-inventario').classList.add('hidden');
+            document.getElementById('vista-caja').classList.add('hidden');
+            document.getElementById('vista-config').classList.add('hidden');
+
+            if (vista === 'tpv') {
+                document.getElementById('vista-tpv').classList.remove('hidden');
+                renderProductosTPV();
+            } else if (vista === 'inventario') {
+                document.getElementById('vista-inventario').classList.remove('hidden');
+                renderTablaInventario();
+            } else if (vista === 'caja') {
+                document.getElementById('vista-caja').classList.remove('hidden');
+                actualizarCierreCaja();
+            } else if (vista === 'config') {
+                document.getElementById('vista-config').classList.remove('hidden');
+                cargarFormConfig();
+            }
+        }
+
+        // --- CONFIGURACIÓN TICKET ---
+        function cargarFormConfig() {
+            document.getElementById('cfg-nombre').value = configTicket.nombre;
+            document.getElementById('cfg-cif').value = configTicket.cif;
+            document.getElementById('cfg-direccion').value = configTicket.direccion;
+            document.getElementById('cfg-telefono').value = configTicket.telefono;
+            document.getElementById('cfg-pie').value = configTicket.pie;
+            actualizarVistaPrevia();
+        }
+
+        function guardarConfigTicket(e) {
+            e.preventDefault();
+            configTicket = {
+                nombre: document.getElementById('cfg-nombre').value,
+                cif: document.getElementById('cfg-cif').value,
+                direccion: document.getElementById('cfg-direccion').value,
+                telefono: document.getElementById('cfg-telefono').value,
+                pie: document.getElementById('cfg-pie').value
+            };
+            guardarDatos();
+            actualizarVistaPrevia();
+            alert("Configuración del ticket guardada.");
+        }
+
+        function actualizarVistaPrevia() {
+            document.getElementById('prev-nombre').innerText = configTicket.nombre.toUpperCase();
+            document.getElementById('prev-cif').innerText = "CIF: " + configTicket.cif;
+            document.getElementById('prev-direccion').innerText = configTicket.direccion;
+            document.getElementById('prev-telefono').innerText = "Tel: " + configTicket.telefono;
+            document.getElementById('prev-pie').innerText = configTicket.pie;
+        }
+
+        // --- VENTAS (TPV) ---
+        function renderProductosTPV(filtro = 'todos') {
+            const contenedor = document.getElementById('lista-productos-tpv');
+            contenedor.innerHTML = '';
+            const filtrados = productos.filter(p => filtro === 'todos' || p.categoria === filtro);
+
+            filtrados.forEach(p => {
+                const btn = document.createElement('button');
+                btn.className = `p-4 rounded-lg shadow border text-left flex flex-col justify-between transition h-24 ${p.categoria === 'comida' ? 'bg-amber-50 border-amber-200 hover:bg-amber-100' : 'bg-cyan-50 border-cyan-200 hover:bg-cyan-100'}`;
+                btn.onclick = () => agregarAlTicket(p);
+                btn.innerHTML = `<span class="font-semibold text-gray-800 line-clamp-2">${p.nombre}</span><span class="text-indigo-600 font-bold mt-1">${p.precio.toFixed(2)} €</span>`;
+                contenedor.appendChild(btn);
+            });
+        }
+
+        function filtrarProductos(cat) { renderProductosTPV(cat); }
+
+        function agregarAlTicket(producto) {
+            const itemExiste = ticketActual.find(item => item.id === producto.id);
+            if (itemExiste) itemExiste.cantidad++;
+            else ticketActual.push({ ...producto, cantidad: 1 });
+            renderTicket();
+        }
+
+        function modificarCantidadTicket(id, cambio) {
+            const item = ticketActual.find(i => i.id === id);
+            if (item) {
+                item.cantidad += cambio;
+                if (item.cantidad <= 0) ticketActual = ticketActual.filter(i => i.id !== id);
+            }
+            renderTicket();
+        }
+
+        function renderTicket() {
+            const contenedor = document.getElementById('contenido-ticket');
+            contenedor.innerHTML = '';
+            let total = 0;
+
+            ticketActual.forEach(item => {
+                const subtotal = item.precio * item.cantidad;
+                total += subtotal;
+                const div = document.createElement('div');
+                div.className = "flex items-center justify-between p-2 bg-gray-50 rounded border text-sm";
+                div.innerHTML = `
+                    <div class="w-1/2"><p class="font-medium text-gray-800">${item.nombre}</p><p class="text-xs text-gray-500">${item.precio.toFixed(2)} €/ud</p></div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="modificarCantidadTicket(${item.id}, -1)" class="w-6 h-6 rounded bg-gray-200 hover:bg-gray-300 font-bold">-</button>
+                        <span class="font-semibold w-4 text-center">${item.cantidad}</span>
+                        <button onclick="modificarCantidadTicket(${item.id}, 1)" class="w-6 h-6 rounded bg-gray-200 hover:bg-gray-300 font-bold">+</button>
+                    </div>
+                    <div class="w-16 text-right font-bold text-gray-700">${subtotal.toFixed(2)} €</div>`;
+                contenedor.appendChild(div);
+            });
+            document.getElementById('total-ticket').innerText = `${total.toFixed(2)} €`;
+        }
+
+        function vaciarTicket() { ticketActual = []; renderTicket(); }
+
+        // NUEVO SISTEMA DE IMPRESIÓN SEGURO SIN PAPEL EN BLANCO
+        function procesarPago() {
+            if (ticketActual.length === 0) { alert("El ticket está vacío."); return; }
+
+            const total = ticketActual.reduce((acc, item) => acc + (item.precio * item.cantidad), 0);
+            const metodo = document.getElementById('metodo-pago').value;
+            const fechaCompleta = new Date().toLocaleString();
+            const hora = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const ticketID = "Nº " + Math.floor(100000 + Math.random() * 900000);
+
+            // Estructurar ítems para impresión
+            let itemsHTML = '';
+            ticketActual.forEach(i => {
+                itemsHTML += `
+                <div style="display:flex; justify-content:space-between; margin-bottom: 3px;">
+                    <span>${i.cantidad}x ${i.nombre}</span>
+                    <span>${(i.precio * i.cantidad).toFixed(2)}€</span>
+                </div>`;
+            });
+
+            // Abrir una ventana limpia e independiente exclusiva para mandar a la impresora
+            const ventanaImpresion = window.open('', '_blank', 'width=400,height=600');
+            
+            ventanaImpresion.document.write(`
+                <html>
+                <head>
+                    <title>Imprimir Ticket</title>
+                    <style>
+                        body { 
+                            font-family: 'Courier New', Courier, monospace; 
+                            width: 76mm; 
+                            margin: 0 auto; 
+                            padding: 10mm 2mm; 
+                            color: #000; 
+                            font-size: 13px;
+                        }
+                        .text-center { text-align: center; }
+                        .text-right { text-align: right; }
+                        .bold { font-weight: bold; }
+                        .divider { border-bottom: 1px dashed #000; margin: 6px 0; }
+                    </style>
+                </head>
+                <body>
+                    <div class="text-center bold" style="font-size: 16px;">${configTicket.nombre.toUpperCase()}</div>
+                    <div class="text-center">CIF: ${configTicket.cif}</div>
+                    <div class="text-center">${configTicket.direccion}</div>
+                    <div class="text-center">Tel: ${configTicket.telefono}</div>
+                    <div class="divider"></div>
+                    <div>${ticketID}</div>
+                    <div>Fecha: ${fechaCompleta}</div>
+                    <div>Pago: ${metodo}</div>
+                    <div class="divider"></div>
+                    <div>${itemsHTML}</div>
+                    <div class="divider"></div>
+                    <div style="display:flex; justify-content:space-between; font-size: 15px;" class="bold">
+                        <span>TOTAL:</span>
+                        <span>${total.toFixed(2)} €</span>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="text-center" style="font-size: 11px; margin-top: 10px;">${configTicket.pie}</div>
+                    <script>
+                        // Esperar a que el navegador procese el documento e imprimir
+                        window.onload = function() {
+                            window.print();
+                            setTimeout(function() { window.close(); }, 500);
+                        };
+                    <\/script>
+                </body>
+                </html>
+            `);
+            ventanaImpresion.document.close();
+
+            // Guardar en histórico de caja
+            const nuevaVenta = {
+                id: Date.now(),
+                fecha: new Date().toLocaleDateString(),
+                hora: hora,
+                metodo: metodo,
+                total: total,
+                items: ticketActual.map(i => `${i.cantidad}x ${i.nombre}`).join(', ')
+            };
+
+            ventas.push(nuevaVenta);
+            guardarDatos();
+            vaciarTicket();
+        }
+
+        // --- INVENTARIO ---
+        function renderTablaInventario() {
+            const tbody = document.getElementById('tabla-productos-cuerpo');
+            tbody.innerHTML = '';
+            productos.forEach(p => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b hover:bg-gray-50 text-sm text-gray-700";
+                tr.innerHTML = `
+                    <td class="p-3 font-medium">${p.nombre}</td>
+                    <td class="p-3 capitalize"><span class="px-2 py-0.5 rounded text-xs ${p.categoria === 'comida' ? 'bg-amber-100 text-amber-800' : 'bg-cyan-100 text-cyan-800'}">${p.categoria}</span></td>
+                    <td class="p-3 font-bold">${p.precio.toFixed(2)} €</td>
+                    <td class="p-3 text-center space-x-2">
+                        <button onclick="cargarProductoEnFormulario(${p.id})" class="text-indigo-600 hover:text-indigo-900"><i class="fa-solid fa-pen-to-square"></i> Editar</button>
+                        <button onclick="eliminarProducto(${p.id})" class="text-red-600 hover:text-red-900"><i class="fa-solid fa-trash"></i> Eliminar</button>
+                    </td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function guardarProducto(e) {
+            e.preventDefault();
+            const id = document.getElementById('prod-id').value;
+            const nombre = document.getElementById('prod-nombre').value;
+            const precio = parseFloat(document.getElementById('prod-precio').value);
+            const categoria = document.getElementById('prod-categoria').value;
+
+            if (id) {
+                const index = productos.findIndex(p => p.id == id);
+                if (index !== -1) productos[index] = { id: parseInt(id), nombre, precio, categoria };
+            } else {
+                productos.push({ id: Date.now(), nombre, precio, categoria });
+            }
+            guardarDatos();
+            renderTablaInventario();
+            limpiarFormularioProducto();
+        }
+
+        function cargarProductoEnFormulario(id) {
+            const p = productos.find(prod => prod.id === id);
+            if (p) {
+                document.getElementById('prod-id').value = p.id;
+                document.getElementById('prod-nombre').value = p.nombre;
+                document.getElementById('prod-precio').value = p.precio;
+                document.getElementById('prod-categoria').value = p.categoria;
+                document.getElementById('titulo-form-producto').innerText = "Editar Producto";
+            }
+        }
+
+        function eliminarProducto(id) {
+            if (confirm("¿Eliminar este producto?")) {
+                productos = productos.filter(p => p.id !== id);
+                guardarDatos();
+                renderTablaInventario();
+            }
+        }
+
+        function limpiarFormularioProducto() {
+            document.getElementById('form-producto').reset();
+            document.getElementById('prod-id').value = '';
+            document.getElementById('titulo-form-producto').innerText = "Añadir Producto";
+        }
+
+        // --- CIERRE DE CAJA ---
+        function obtenerTotales() {
+            let efec = 0, tarj = 0, biz = 0;
+            ventas.forEach(v => {
+                if (v.metodo === 'Efectivo') efec += v.total;
+                if (v.metodo === 'Tarjeta') tarj += v.total;
+                if (v.metodo === 'Bizum') biz += v.total;
+            });
+            return { efec, tarj, biz, total: (efec + tarj + biz) };
+        }
+
+        function actualizarCierreCaja() {
+            const tbody = document.getElementById('tabla-ventas-cuerpo');
+            tbody.innerHTML = '';
+
+            ventas.forEach(v => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b text-xs text-gray-600 hover:bg-gray-50";
+                tr.innerHTML = `<td class="p-3">${v.hora}</td><td class="p-3 font-semibold">${v.metodo}</td><td class="p-3 max-w-xs truncate">${v.items}</td><td class="p-3 text-right font-bold text-gray-800">${v.total.toFixed(2)} €</td>`;
+                tbody.appendChild(tr);
+            });
+
+            const t = obtenerTotales();
+            document.getElementById('caja-efectivo').innerText = `${t.efec.toFixed(2)} €`;
+            document.getElementById('caja-tarjeta').innerText = `${t.tarj.toFixed(2)} €`;
+            document.getElementById('caja-bizum').innerText = `${t.biz.toFixed(2)} €`;
+            document.getElementById('caja-total').innerText = `${t.total.toFixed(2)} €`;
+        }
+
+        // NUEVA FUNCIÓN: GENERAR Y DESCARGAR ARCHIVO TXT DEL CIERRE
+        function descargarInformeCaja() {
+            if (ventas.length === 0) {
+                alert("No hay ventas registradas para generar un informe.");
+                return;
+            }
+
+            const t = obtenerTotales();
+            const fecha = new Date().toLocaleDateString().replace(/\//g, '-');
+            const hora = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            let txt = `========================================\n`;
+            txt += `      INFORME DE CIERRE DE CAJA         \n`;
+            txt += `========================================\n`;
+            txt += `Empresa: ${configTicket.nombre}\n`;
+            txt += `Fecha Cierre: ${new Date().toLocaleString()}\n`;
+            txt += `========================================\n\n`;
+            txt += `RESUMEN DE CAJA:\n`;
+            txt += `----------------------------------------\n`;
+            txt += `💵 EFECTIVO:   ${t.efec.toFixed(2)} €\n`;
+            txt += `💳 TARJETA:    ${t.tarj.toFixed(2)} €\n`;
+            txt += `📱 BIZUM:      ${t.biz.toFixed(2)} €\n`;
+            txt += `----------------------------------------\n`;
+            txt += `💰 TOTAL TURNO: ${t.total.toFixed(2)} €\n\n`;
+            txt += `LISTADO DE TICKETS COBRADOS:\n`;
+            txt += `----------------------------------------\n`;
+            
+            ventas.forEach((v, index) => {
+                txt += `[${v.hora}] Ticket #${index + 1} (${v.metodo}) - Total: ${v.total.toFixed(2)} €\n`;
+                txt += `     Productos: ${v.items}\n`;
+                txt += `----------------------------------------\n`;
+            });
+
+            txt += `\nFin del informe.\n`;
+
+            // Crear el enlace de descarga física del archivo
+            const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+            const elemento = document.createElement('a');
+            elemento.href = URL.createObjectURL(blob);
+            elemento.download = `Cierre_Caja_${fecha}_${hora.replace(':', '-')}.txt`;
+            document.body.appendChild(elemento);
+            elemento.click();
+            document.body.removeChild(elemento);
+        }
+
+        function ejecutarCierreCaja() {
+            if (ventas.length === 0) { alert("No hay ventas registradas hoy."); return; }
+            
+            if (confirm("¿Estás seguro? Se recomienda descargar primero el archivo .TXT. Al aceptar se reiniciará la caja a 0 para el siguiente turno.")) {
+                ventas = [];
+                guardarDatos();
+                actualizarCierreCaja();
+                alert("Cierre de caja efectuado y contador puesto a cero.");
+            }
+        }
+
+        // Inicialización
+        renderProductosTPV();
+    </script>
+</body>
+</html>
